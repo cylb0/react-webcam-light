@@ -1,31 +1,44 @@
-import { FC, useEffect, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { VideoConstraints } from "../../types/videoContraints";
 import { useComputeDimensions } from "../../hooks/useComputeDimensions";
 import { createPortal } from "react-dom";
 
-type WebcamProps = {
+export type WebcamRef = {
+    startRecording: () => void;
+    stopRecording: () => void;
+    getRecordedChunks: () => Array<Blob>;
+}
+
+interface WebcamProps {
     audio?: boolean;
     fullscreen?: boolean;
     videoConstraints: VideoConstraints;
 }
-const Webcam: FC<WebcamProps> = ({
+
+const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     audio = false,
     fullscreen = false,
     videoConstraints = {
         width: 640,
         height: 360
     }
-}) => {
-    const videoRef = useRef<HTMLVideoElement>(null)
+}, ref) => {
+    const videoRef = useRef<HTMLVideoElement | null>(null)
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const dimensions = useComputeDimensions(videoConstraints)
+    const [recordedChunks, setRecordedChunks] = useState<Array<Blob>>([])
+    const [isRecordingState, setIsRecordingState] = useState<boolean>(false)
     
     useEffect(() => {
         const initStream = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: audio })
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream
                 }
+                mediaRecorderRef.current = new MediaRecorder(stream)
+                mediaRecorderRef.current.ondataavailable = handleDataAvailable
+                mediaRecorderRef.current.onstop = handleRecordingStopped
             } catch (error) {
                 alert('An error occured while accessing the camera.')
                 console.error('An error occured while accessing the camera.', error)
@@ -33,6 +46,38 @@ const Webcam: FC<WebcamProps> = ({
         }
         initStream()
     }, [audio])
+
+    useEffect(() => {
+
+    }, [isRecordingState])
+
+    const handleDataAvailable = (event: BlobEvent) => {
+        if (event.data.size > 0) {
+            setRecordedChunks(prev => [...prev, event.data])
+        }
+    }
+
+    const handleRecordingStopped = () => {
+        setIsRecordingState(false)
+    }
+
+    const startRecording = useCallback(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive' ) {
+            setRecordedChunks([])
+            mediaRecorderRef.current.start()
+            setIsRecordingState(true)
+        }
+    }, [])
+
+    const stopRecording = useCallback(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop()
+        }
+    }, [])
+
+    const getRecordedChunks = useCallback(() => {
+        return recordedChunks
+    }, [recordedChunks])
 
     const videoElement = 
     <video 
@@ -43,7 +88,14 @@ const Webcam: FC<WebcamProps> = ({
            objectFit: 'cover'
         }}
         autoPlay
+        muted
     />
+
+    useImperativeHandle(ref, () => ({
+        startRecording,
+        stopRecording,
+        getRecordedChunks,
+    }))
 
     return (
         <>
@@ -68,6 +120,6 @@ const Webcam: FC<WebcamProps> = ({
             }
         </>
     )
-}
+})
 
 export default Webcam
