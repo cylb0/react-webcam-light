@@ -1,0 +1,1 @@
+# A react library that simplifies controlling the user's webcam on your web app
