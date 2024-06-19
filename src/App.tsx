@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from 'react'
-import Webcam, { WebcamRef } from '../lib/components/Webcam/Webcam'
+import Webcam from '../lib/components/Webcam/Webcam'
 import { VideoConstraints } from '../lib/types/videoContraints'
 import './App.css'
+import { WebcamRef } from '../lib/types/webcam'
 
 function App() {
 
@@ -9,7 +10,6 @@ function App() {
   const [isRecording, setIsRecording] = useState<boolean>(false)
 
   const videoConstraints: VideoConstraints = {
-    aspectRatio: 1.77
   }
 
   const handleGetRecordedChunks = () => {
