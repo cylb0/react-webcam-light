@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 export type WebcamRef = {
     startRecording: () => void;
     stopRecording: () => void;
-    getRecordedChunks: () => Array<Blob>;
+    getRecordedChunks: () => Blob;
 }
 
 interface WebcamProps {
@@ -57,16 +57,34 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
                 stream.getTracks().forEach(track => track.stop())
             }
         }
-    }, [audio, onRecordingStateChange, stream])
+    }, [audio, onRecordingStateChange])
 
+    /**
+     * Handles the data available event from MediaRecorder.
+     * 
+     * This is triggered whenever MediaRecorder has available data
+     * If data size is greater than 0 it appends data to the
+     * recordedChunks state.
+     * 
+     * @param {BlobEvent} event - The BlobEvent object containing
+     * recorded data.
+     */
     const handleDataAvailable = (event: BlobEvent) => {
         if (event.data.size > 0) {
             setRecordedChunks(prev => [...prev, event.data])
         }
     }
 
-
-
+    /**
+     * Starts recording the media stream
+     * 
+     * This functions initializes the recording by reseting the
+     * recorded chunks state. It then starts the MediaRecorder
+     * and notify the parent component about the change in recording
+     * state using prop callback.
+     * 
+     * @function
+     */
     const startRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive' ) {
             setRecordedChunks([])
@@ -75,14 +93,42 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
         }
     }, [])
 
+    /**
+     * Stops recording the MediaStream.
+     * 
+     * This function stops the MediaRecorder if it is in 'recording' state.
+     * 
+     * @function
+     */
     const stopRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
             mediaRecorderRef.current.stop()
         }
     }, [])
 
+    /**
+     * Retrieves recorded chunks as a single Blob object.
+     * 
+     * This function combines the recorded media chunks into a single
+     * Blob object and returns it. If now chunks are available or if 
+     * an error occurs while creating the Blob, it throws an error.
+     * 
+     * @returns {Blob} - The recorded media chunks combined in a single Blob.
+     * @throws {Error} - If there are no recorded chunks or if Blob
+     * creation fails.
+     * @function
+     * 
+     */
     const getRecordedChunks = useCallback(() => {
-        return recordedChunks
+        if (recordedChunks.length === 0) {
+            throw new Error('No recorded chunks available.')
+        }
+        
+        try {
+            return new Blob(recordedChunks, { type: 'video/webm' })
+        } catch (error) {
+            throw new Error('Failed to create Blob from recorded chunks.')
+        }
     }, [recordedChunks])
 
     const videoElement = 
