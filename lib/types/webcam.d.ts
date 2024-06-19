@@ -13,3 +13,8 @@ export type WebcamRef = {
     stopRecording: () => void;
     getRecordedChunks: () => Blob;
 }
+
+export type Dimensions = {
+    height: number;
+    width: number;
+}
