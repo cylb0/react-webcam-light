@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import Webcam, { WebcamRef } from '../lib/components/Webcam/Webcam'
 import { VideoConstraints } from '../lib/types/videoContraints'
 import './App.css'
@@ -24,30 +24,24 @@ function App() {
     }
   }
 
-  const handleStartRecording = () => {
-    console.log('click start')
-    webcamRef.current?.startRecording()
-    setIsRecording(true)
-  }
-
-  const handleStopRecording = () => {
-    console.log('click stop')
-    webcamRef.current?.stopRecording()
-    setIsRecording(false)
-  }
+  const handleRecordingStateChange = useCallback((isRecording: boolean) => {
+    setIsRecording(isRecording)
+  }, [])
 
   return (
     <>
       <Webcam
         ref={webcamRef}
+        onRecordingStateChange={handleRecordingStateChange}
         videoConstraints={videoConstraints}
       />
       {!isRecording &&
-        (<button onClick={handleStartRecording}>Start recording</button>)
+        (<button onClick={() => webcamRef.current?.startRecording()}>Start recording</button>)
       }
       {isRecording && 
-        (<button onClick={handleStopRecording}>Stop recording</button>)}
-      {!isRecording && <button onClick={handleGetRecordedChunks}>Download Chunks</button>}
+        (<button onClick={() => webcamRef.current?.stopRecording()}>Stop recording</button>)}
+      {!isRecording && 
+      <button onClick={handleGetRecordedChunks}>Download Chunks</button>}
     </>
   )
 }

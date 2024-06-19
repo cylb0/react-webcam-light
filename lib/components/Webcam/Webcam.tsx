@@ -12,12 +12,14 @@ export type WebcamRef = {
 interface WebcamProps {
     audio?: boolean;
     fullscreen?: boolean;
+    onRecordingStateChange: (isRecording: boolean) => void;
     videoConstraints: VideoConstraints;
 }
 
 const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     audio = false,
     fullscreen = false,
+    onRecordingStateChange,
     videoConstraints = {
         width: 640,
         height: 360
@@ -27,9 +29,12 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const dimensions = useComputeDimensions(videoConstraints)
     const [recordedChunks, setRecordedChunks] = useState<Array<Blob>>([])
-    const [isRecordingState, setIsRecordingState] = useState<boolean>(false)
     
     useEffect(() => {
+        const handleRecordingStopped = () => {
+            if (onRecordingStateChange) onRecordingStateChange(false)
+        }
+
         const initStream = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -41,15 +46,10 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
                 mediaRecorderRef.current.onstop = handleRecordingStopped
             } catch (error) {
                 alert('An error occured while accessing the camera.')
-                console.error('An error occured while accessing the camera.', error)
             }
         }
         initStream()
-    }, [audio])
-
-    useEffect(() => {
-
-    }, [isRecordingState])
+    }, [audio, onRecordingStateChange])
 
     const handleDataAvailable = (event: BlobEvent) => {
         if (event.data.size > 0) {
@@ -57,15 +57,13 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
         }
     }
 
-    const handleRecordingStopped = () => {
-        setIsRecordingState(false)
-    }
+
 
     const startRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive' ) {
             setRecordedChunks([])
             mediaRecorderRef.current.start()
-            setIsRecordingState(true)
+            if (onRecordingStateChange) onRecordingStateChange(true)
         }
     }, [])
 
@@ -95,7 +93,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
         startRecording,
         stopRecording,
         getRecordedChunks,
-    }))
+    }), [getRecordedChunks, startRecording, stopRecording])
 
     return (
         <>
