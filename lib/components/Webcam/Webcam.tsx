@@ -29,6 +29,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const dimensions = useComputeDimensions(videoConstraints)
     const [recordedChunks, setRecordedChunks] = useState<Array<Blob>>([])
+    const [stream, setStream] = useState<MediaStream | null>(null)
     
     useEffect(() => {
         const handleRecordingStopped = () => {
@@ -44,12 +45,19 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
                 mediaRecorderRef.current = new MediaRecorder(stream)
                 mediaRecorderRef.current.ondataavailable = handleDataAvailable
                 mediaRecorderRef.current.onstop = handleRecordingStopped
+                setStream(stream)
             } catch (error) {
                 alert('An error occured while accessing the camera.')
             }
         }
         initStream()
-    }, [audio, onRecordingStateChange])
+
+        return () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop())
+            }
+        }
+    }, [audio, onRecordingStateChange, stream])
 
     const handleDataAvailable = (event: BlobEvent) => {
         if (event.data.size > 0) {
