@@ -9,10 +9,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     fullscreen = false,
     onRecordingStateChange,
     rec = false,
-    videoConstraints = {
-        width: 640,
-        height: 360
-    }
+    videoConstraints,
 }, ref) => {
     const videoRef = useRef<HTMLVideoElement | null>(null)
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -128,7 +125,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
         position: 'relative'
     }}>
         {rec && <Rec isRecording={isRecording} />}
-        <video 
+        {dimensions && <video 
             ref={videoRef}
             style={{
             width: fullscreen ? '100%' : `${dimensions.width}px`,
@@ -137,7 +134,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
             }}
             autoPlay
             muted
-        />
+        />}
     </div>
 
     useImperativeHandle(ref, () => ({
