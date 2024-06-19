@@ -8,6 +8,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     audio = false,
     fullscreen = false,
     onRecordingStateChange,
+    rec = false,
     videoConstraints = {
         width: 640,
         height: 360
@@ -126,7 +127,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     <div style={{
         position: 'relative'
     }}>
-        <Rec isRecording={isRecording} />
+        {rec && <Rec isRecording={isRecording} />}
         <video 
             ref={videoRef}
             style={{

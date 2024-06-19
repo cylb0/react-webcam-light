@@ -13,15 +13,10 @@ function App() {
   }
 
   const handleGetRecordedChunks = () => {
-    const chunks: Array<Blob> = webcamRef.current?.getRecordedChunks() || []
-    if (chunks.length > 0) {
-      const blobVideo = new Blob(chunks, { type: 'video/webm' })
-      const url = URL.createObjectURL(blobVideo)
-      console.log(url)
-      window.open(url, '_blank')
-    } else {
-      alert('No recorded chunks')
-    }
+    const blob: Blob = webcamRef.current!.getRecordedChunks()
+    const url = URL.createObjectURL(blob)
+    console.log(url)
+    window.open(url, '_blank')
   }
 
   const handleRecordingStateChange = useCallback((isRecording: boolean) => {
@@ -33,6 +28,7 @@ function App() {
       <Webcam
         ref={webcamRef}
         onRecordingStateChange={handleRecordingStateChange}
+        rec
         videoConstraints={videoConstraints}
       />
       {!isRecording &&

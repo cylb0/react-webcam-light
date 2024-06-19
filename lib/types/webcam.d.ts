@@ -4,6 +4,7 @@ export interface WebcamProps {
     audio?: boolean;
     fullscreen?: boolean;
     onRecordingStateChange: (isRecording: boolean) => void;
+    rec?: boolean;
     videoConstraints: VideoConstraints;
 }
 
