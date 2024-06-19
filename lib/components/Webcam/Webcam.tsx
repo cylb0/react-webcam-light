@@ -1,20 +1,8 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { VideoConstraints } from "../../types/videoContraints";
 import { useComputeDimensions } from "../../hooks/useComputeDimensions";
 import { createPortal } from "react-dom";
-
-export type WebcamRef = {
-    startRecording: () => void;
-    stopRecording: () => void;
-    getRecordedChunks: () => Blob;
-}
-
-interface WebcamProps {
-    audio?: boolean;
-    fullscreen?: boolean;
-    onRecordingStateChange: (isRecording: boolean) => void;
-    videoConstraints: VideoConstraints;
-}
+import Rec from "../Rec/Rec";
+import { WebcamProps, WebcamRef } from "../../types/webcam";
 
 const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     audio = false,
@@ -30,6 +18,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     const dimensions = useComputeDimensions(videoConstraints)
     const [recordedChunks, setRecordedChunks] = useState<Array<Blob>>([])
     const [stream, setStream] = useState<MediaStream | null>(null)
+    const [isRecording, setIsRecording] = useState<boolean>(false)
     
     useEffect(() => {
         const handleRecordingStopped = () => {
@@ -89,6 +78,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive' ) {
             setRecordedChunks([])
             mediaRecorderRef.current.start()
+            setIsRecording(true)
             if (onRecordingStateChange) onRecordingStateChange(true)
         }
     }, [])
@@ -103,6 +93,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     const stopRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
             mediaRecorderRef.current.stop()
+            setIsRecording(false)
         }
     }, [])
 
@@ -132,16 +123,21 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     }, [recordedChunks])
 
     const videoElement = 
-    <video 
-        ref={videoRef}
-        style={{
-           width: fullscreen ? '100%' : `${dimensions.width}px`,
-           height: fullscreen ? '100%' : `${dimensions.height}px`,
-           objectFit: 'cover'
-        }}
-        autoPlay
-        muted
-    />
+    <div style={{
+        position: 'relative'
+    }}>
+        <Rec isRecording={isRecording} />
+        <video 
+            ref={videoRef}
+            style={{
+            width: fullscreen ? '100%' : `${dimensions.width}px`,
+            height: fullscreen ? '100%' : `${dimensions.height}px`,
+            objectFit: 'cover'
+            }}
+            autoPlay
+            muted
+        />
+    </div>
 
     useImperativeHandle(ref, () => ({
         startRecording,
