@@ -3,26 +3,23 @@ import { useComputeDimensions } from "../../hooks/useComputeDimensions";
 import { createPortal } from "react-dom";
 import Rec from "../Rec/Rec";
 import { WebcamProps, WebcamRef } from "../../types/webcam";
+import { RecordingState } from "../../enums/recordingStates";
 
 const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     audio = false,
     fullscreen = false,
-    onRecordingStateChange,
     rec = false,
     videoConstraints,
+    onRecordingStateChange,
 }, ref) => {
     const videoRef = useRef<HTMLVideoElement | null>(null)
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const dimensions = useComputeDimensions(videoConstraints)
     const [recordedChunks, setRecordedChunks] = useState<Array<Blob>>([])
     const [stream, setStream] = useState<MediaStream | null>(null)
-    const [isRecording, setIsRecording] = useState<boolean>(false)
-    
-    useEffect(() => {
-        const handleRecordingStopped = () => {
-            if (onRecordingStateChange) onRecordingStateChange(false)
-        }
+    const [recordingState, setRecordingState] = useState<RecordingState>(RecordingState.IDLE)
 
+    useEffect(() => {
         const initStream = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -31,7 +28,6 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
                 }
                 mediaRecorderRef.current = new MediaRecorder(stream)
                 mediaRecorderRef.current.ondataavailable = handleDataAvailable
-                mediaRecorderRef.current.onstop = handleRecordingStopped
                 setStream(stream)
             } catch (error) {
                 alert('An error occured while accessing the camera.')
@@ -44,7 +40,11 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
                 stream.getTracks().forEach(track => track.stop())
             }
         }
-    }, [audio, onRecordingStateChange])
+    }, [audio])
+
+    useEffect(() => {
+        onRecordingStateChange(recordingState)
+    }, [recordingState, onRecordingStateChange])
 
     /**
      * Handles the data available event from MediaRecorder.
@@ -76,8 +76,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'inactive' ) {
             setRecordedChunks([])
             mediaRecorderRef.current.start()
-            setIsRecording(true)
-            if (onRecordingStateChange) onRecordingStateChange(true)
+            setRecordingState(RecordingState.RECORDING)
         }
     }, [])
 
@@ -91,7 +90,7 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
     const stopRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
             mediaRecorderRef.current.stop()
-            setIsRecording(false)
+            setRecordingState(RecordingState.STOPPED)
         }
     }, [])
 
@@ -120,11 +119,21 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
         }
     }, [recordedChunks])
 
+    const downloadVideo = useCallback((filename: string) => {
+        const blob: Blob = getRecordedChunks()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${filename}.webm`
+        a.click()
+        window.URL.revokeObjectURL(url)
+    }, [getRecordedChunks])
+
     const videoElement = 
     <div style={{
         position: 'relative'
     }}>
-        {rec && <Rec isRecording={isRecording} />}
+        {rec && <Rec isRecording={recordingState === RecordingState.RECORDING} />}
         {dimensions && <video 
             ref={videoRef}
             style={{
@@ -141,7 +150,9 @@ const Webcam = forwardRef<WebcamRef, WebcamProps>(({
         startRecording,
         stopRecording,
         getRecordedChunks,
-    }), [getRecordedChunks, startRecording, stopRecording])
+        downloadVideo,
+        getRecordingState: () => recordingState,
+    }), [startRecording, stopRecording, getRecordedChunks, downloadVideo])
 
     return (
         <>
