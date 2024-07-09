@@ -1,4 +1,4 @@
 import { AspectRatio } from "../enums/aspectRatios"
 
-export const base_width = 640
-export const base_aspect_ratio = AspectRatio["16:9"]
+export const BASE_WIDTH = 640
+export const BASE_ASPECT_RATIO = AspectRatio.FOUR_THREE
