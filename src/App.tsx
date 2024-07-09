@@ -1,43 +1,42 @@
-import { useCallback, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import Webcam from '../lib/components/Webcam/Webcam'
 import { VideoConstraints } from '../lib/types/videoContraints'
 import './App.css'
 import { WebcamRef } from '../lib/types/webcam'
+import { AspectRatio } from '../lib/enums/aspectRatios'
+import { RecordingState } from '../lib/enums/recordingStates'
 
 function App() {
-
   const webcamRef = useRef<WebcamRef>(null)
-  const [isRecording, setIsRecording] = useState<boolean>(false)
+  const [recordingState, setRecordingState] = useState<RecordingState | null>(null)
 
   const videoConstraints: VideoConstraints = {
+    height: 600,
+    aspectRatio: AspectRatio.SIXTEEN_NINE
   }
 
-  const handleGetRecordedChunks = () => {
-    const blob: Blob = webcamRef.current!.getRecordedChunks()
-    const url = URL.createObjectURL(blob)
-    console.log(url)
-    window.open(url, '_blank')
+  const handleRecordingStateChange = (state: RecordingState) => {
+    setRecordingState(state)
   }
-
-  const handleRecordingStateChange = useCallback((isRecording: boolean) => {
-    setIsRecording(isRecording)
-  }, [])
 
   return (
     <>
+      <p>{webcamRef.current?.getRecordingState()}</p>
       <Webcam
         ref={webcamRef}
-        onRecordingStateChange={handleRecordingStateChange}
         rec
         videoConstraints={videoConstraints}
+        onRecordingStateChange={handleRecordingStateChange}
       />
-      {!isRecording &&
+      {recordingState !== 'recording' &&
         (<button onClick={() => webcamRef.current?.startRecording()}>Start recording</button>)
       }
-      {isRecording && 
+      {recordingState === 'recording' && 
         (<button onClick={() => webcamRef.current?.stopRecording()}>Stop recording</button>)}
-      {!isRecording && 
-      <button onClick={handleGetRecordedChunks}>Download Chunks</button>}
+      {recordingState === 'stopped' && 
+      <button onClick={() => {
+        webcamRef.current?.downloadVideo('test')
+      }}>Download Chunks</button>}
     </>
   )
 }
