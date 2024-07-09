@@ -1,5 +1,5 @@
 export enum AspectRatio  {
-    '1:1' = 1,
-    '16:9' = 0.5625,
-    '4:3' = 0.6666,
+    ONE_ONE = 1,
+    SIXTEEN_NINE = 16/9,
+    FOUR_THREE = 4/3,
 }
